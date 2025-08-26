@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # MariaDB Database
+  database:
+    image: mariadb:10.9
+    container_name: market_research_db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: market_research
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - market_research_network
+    restart: unless-stopped
+
+  # Backend API Server
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: market_research_api
+    environment:
+      - DATABASE_URL=mysql://app_user:app_password@database:3306/market_research
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - NEWS_API_KEY=${NEWS_API_KEY}
+      - TWITTER_API_KEY=${TWITTER_API_KEY}
+      - FLASK_ENV=production
+    ports:
+      - "8000:8000"
+    depends_on:
+      - database
+    networks:
+      - market_research_network
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app
+
+  # Frontend Dashboard
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: market_research_dashboard
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - market_research_network
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  db_data:
+    driver: local
+
+networks:
+  market_research_network:
+    driver: bridge
