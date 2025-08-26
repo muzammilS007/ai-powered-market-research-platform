@@ -737,22 +737,230 @@ Limit analysis to top 5-7 most relevant competitors based on market impact and m
         }
     
     def _generate_fallback_insights(self, query: str, context: str) -> Dict[str, Any]:
-        """Generate basic insights when OpenAI API is not available"""
+        """Generate enhanced fallback insights when OpenAI API is not available"""
         
-        return {
-            'summary': f'Analysis completed for "{query}". Market data shows mixed signals with varying sentiment across sources.',
-            'key_findings': [
-                'Market sentiment analysis indicates diverse opinions across data sources',
-                'Trend analysis reveals ongoing market activity and discussion',
-                'Multiple data points collected from various sources for comprehensive analysis'
-            ],
-            'recommendations': [
-                'Continue monitoring market sentiment for trend changes',
-                'Analyze competitor activities and market positioning',
-                'Consider diversification strategies based on current market conditions'
-            ],
-            'confidence_score': 0.6
+        import random
+        
+        # Extract key metrics from context with enhanced parsing
+        sentiment_match = re.search(r'Overall Market Sentiment: (\w+)', context)
+        sentiment = sentiment_match.group(1).lower() if sentiment_match else 'neutral'
+        
+        trend_match = re.search(r'Primary Trend Direction: (\w+)', context)
+        trend = trend_match.group(1).lower() if trend_match else 'stable'
+        
+        # Extract numerical data for more dynamic analysis
+        pos_sentiment = self._extract_percentage(context, 'Positive Sentiment:')
+        neg_sentiment = self._extract_percentage(context, 'Negative Sentiment:')
+        trend_strength = self._extract_percentage(context, 'Trend Strength:')
+        data_points = self._extract_number(context, 'Total Data Points:')
+        
+        # Generate dynamic market interpretation
+        market_condition = self._determine_market_condition(sentiment, trend, pos_sentiment, neg_sentiment)
+        volatility_level = self._assess_volatility(pos_sentiment, neg_sentiment, trend_strength)
+        
+        # Create contextual insights based on query type
+        query_type = self._classify_query_type(query)
+        
+        # Generate dynamic findings based on actual data
+        key_findings = self._generate_dynamic_findings(query, sentiment, trend, pos_sentiment, neg_sentiment, trend_strength, query_type)
+        
+        # Generate contextual recommendations
+        recommendations = self._generate_contextual_recommendations(market_condition, volatility_level, query_type, data_points)
+        
+        # Calculate dynamic confidence score
+        confidence_score = self._calculate_dynamic_confidence(data_points, pos_sentiment + neg_sentiment, trend_strength)
+        
+        insights = {
+            'summary': f'Market analysis for {query} reveals {market_condition} conditions with {sentiment} sentiment ({pos_sentiment:.1%} positive, {neg_sentiment:.1%} negative). The {trend} trend shows {trend_strength:.1%} strength, indicating {self._interpret_market_momentum(trend, trend_strength)} momentum across {data_points} data points.',
+            'key_findings': key_findings,
+            'recommendations': recommendations,
+            'confidence_score': confidence_score,
+            'methodology_notes': f'Analysis based on {data_points} data points using sentiment pattern recognition, trend analysis, and {query_type} market dynamics assessment'
         }
+        
+        return insights
+    
+    def _extract_percentage(self, context: str, label: str) -> float:
+        """Extract percentage values from context"""
+        pattern = rf'{re.escape(label)}\s*(\d+\.\d+)%'
+        match = re.search(pattern, context)
+        return float(match.group(1)) / 100 if match else 0.0
+    
+    def _extract_number(self, context: str, label: str) -> int:
+        """Extract numerical values from context"""
+        pattern = rf'{re.escape(label)}\s*(\d+)'
+        match = re.search(pattern, context)
+        return int(match.group(1)) if match else 0
+    
+    def _determine_market_condition(self, sentiment: str, trend: str, pos_sentiment: float, neg_sentiment: float) -> str:
+        """Determine overall market condition"""
+        if sentiment == 'positive' and trend in ['bullish', 'upward'] and pos_sentiment > 0.6:
+            return 'strongly bullish'
+        elif sentiment == 'negative' and trend in ['bearish', 'downward'] and neg_sentiment > 0.6:
+            return 'strongly bearish'
+        elif abs(pos_sentiment - neg_sentiment) < 0.2:
+            return 'mixed and volatile'
+        elif sentiment == 'positive' or pos_sentiment > neg_sentiment:
+            return 'cautiously optimistic'
+        elif sentiment == 'negative' or neg_sentiment > pos_sentiment:
+            return 'cautiously pessimistic'
+        else:
+            return 'neutral and stable'
+    
+    def _assess_volatility(self, pos_sentiment: float, neg_sentiment: float, trend_strength: float) -> str:
+        """Assess market volatility level"""
+        sentiment_spread = abs(pos_sentiment - neg_sentiment)
+        
+        if sentiment_spread < 0.2 and trend_strength < 0.3:
+            return 'high volatility'
+        elif sentiment_spread < 0.4 and trend_strength < 0.6:
+            return 'moderate volatility'
+        else:
+            return 'low volatility'
+    
+    def _classify_query_type(self, query: str) -> str:
+        """Classify the type of market query"""
+        query_lower = query.lower()
+        
+        if any(word in query_lower for word in ['stock', 'share', 'equity', 'ticker']):
+            return 'equity_analysis'
+        elif any(word in query_lower for word in ['crypto', 'bitcoin', 'ethereum', 'blockchain']):
+            return 'cryptocurrency_analysis'
+        elif any(word in query_lower for word in ['sector', 'industry', 'market']):
+            return 'sector_analysis'
+        elif any(word in query_lower for word in ['company', 'corporation', 'business']):
+            return 'company_analysis'
+        else:
+            return 'general_market_analysis'
+    
+    def _generate_dynamic_findings(self, query: str, sentiment: str, trend: str, pos_sentiment: float, neg_sentiment: float, trend_strength: float, query_type: str) -> List[str]:
+        """Generate dynamic findings based on actual data"""
+        findings = []
+        
+        # Sentiment-based finding
+        if pos_sentiment > 0.6:
+            findings.append(f'Strong positive sentiment ({pos_sentiment:.1%}) indicates high investor confidence in {query}, suggesting potential upward price pressure')
+        elif neg_sentiment > 0.6:
+            findings.append(f'Dominant negative sentiment ({neg_sentiment:.1%}) reflects market concerns about {query}, potentially creating downward pressure')
+        else:
+            findings.append(f'Mixed sentiment ({pos_sentiment:.1%} positive, {neg_sentiment:.1%} negative) suggests market uncertainty and potential volatility in {query}')
+        
+        # Trend-based finding
+        if trend_strength > 0.7:
+            findings.append(f'Strong {trend} trend ({trend_strength:.1%} strength) indicates clear market direction with high conviction among participants')
+        elif trend_strength > 0.4:
+            findings.append(f'Moderate {trend} trend ({trend_strength:.1%} strength) suggests emerging market consensus but with room for reversal')
+        else:
+            findings.append(f'Weak trend strength ({trend_strength:.1%}) indicates market indecision and potential for sudden directional changes')
+        
+        # Query-type specific finding
+        if query_type == 'equity_analysis':
+            findings.append(f'Equity-specific indicators suggest {self._get_equity_insight(sentiment, trend_strength)} performance expectations')
+        elif query_type == 'cryptocurrency_analysis':
+            findings.append(f'Cryptocurrency market dynamics show {self._get_crypto_insight(pos_sentiment, neg_sentiment)} adoption and regulatory sentiment')
+        elif query_type == 'sector_analysis':
+            findings.append(f'Sector-wide analysis reveals {self._get_sector_insight(trend, trend_strength)} competitive positioning and growth prospects')
+        else:
+            findings.append(f'Market-wide analysis indicates {self._get_general_insight(sentiment, trend)} economic conditions and investor behavior patterns')
+        
+        return findings[:3]  # Limit to 3 key findings
+    
+    def _generate_contextual_recommendations(self, market_condition: str, volatility_level: str, query_type: str, data_points: int) -> List[str]:
+        """Generate contextual recommendations based on market conditions"""
+        recommendations = []
+        
+        # Market condition based recommendations
+        if 'bullish' in market_condition:
+            recommendations.append('{Priority: High} Consider increasing position size during pullbacks - Expected outcome: Capitalize on upward momentum - Timeline: 1-3 months')
+        elif 'bearish' in market_condition:
+            recommendations.append('{Priority: High} Implement defensive strategies and risk management - Expected outcome: Protect capital during downturn - Timeline: Immediate')
+        elif 'mixed' in market_condition:
+            recommendations.append('{Priority: High} Adopt range-trading strategies and monitor key support/resistance levels - Expected outcome: Profit from volatility - Timeline: 2-6 weeks')
+        else:
+            recommendations.append('{Priority: Medium} Maintain balanced approach with regular portfolio rebalancing - Expected outcome: Steady growth with controlled risk - Timeline: 3-6 months')
+        
+        # Volatility based recommendations
+        if volatility_level == 'high volatility':
+            recommendations.append('{Priority: Medium} Reduce position sizes and increase cash reserves - Expected outcome: Lower portfolio risk - Timeline: Immediate')
+        elif volatility_level == 'moderate volatility':
+            recommendations.append('{Priority: Medium} Use dollar-cost averaging for new positions - Expected outcome: Smooth entry prices - Timeline: 4-8 weeks')
+        else:
+            recommendations.append('{Priority: Low} Consider longer-term strategic positions - Expected outcome: Benefit from stable trends - Timeline: 6-12 months')
+        
+        # Data quality based recommendations
+        if data_points < 10:
+            recommendations.append('{Priority: High} Expand data sources for more comprehensive analysis - Expected outcome: Improved decision accuracy - Timeline: 1-2 weeks')
+        
+        return recommendations[:3]  # Limit to 3 recommendations
+    
+    def _calculate_dynamic_confidence(self, data_points: int, sentiment_coverage: float, trend_strength: float) -> float:
+        """Calculate dynamic confidence score based on data quality"""
+        base_confidence = 0.5
+        
+        # Data quantity factor
+        if data_points >= 20:
+            base_confidence += 0.2
+        elif data_points >= 10:
+            base_confidence += 0.1
+        
+        # Sentiment coverage factor
+        if sentiment_coverage > 0.8:
+            base_confidence += 0.15
+        elif sentiment_coverage > 0.5:
+            base_confidence += 0.1
+        
+        # Trend strength factor
+        if trend_strength > 0.7:
+            base_confidence += 0.1
+        elif trend_strength > 0.4:
+            base_confidence += 0.05
+        
+        return min(base_confidence, 0.95)  # Cap at 95%
+    
+    def _get_equity_insight(self, sentiment: str, trend_strength: float) -> str:
+        """Get equity-specific insight"""
+        if sentiment == 'positive' and trend_strength > 0.6:
+            return 'strong bullish'
+        elif sentiment == 'negative' and trend_strength > 0.6:
+            return 'concerning bearish'
+        else:
+            return 'mixed with cautious'
+    
+    def _get_crypto_insight(self, pos_sentiment: float, neg_sentiment: float) -> str:
+        """Get cryptocurrency-specific insight"""
+        if pos_sentiment > 0.6:
+            return 'increasing mainstream'
+        elif neg_sentiment > 0.6:
+            return 'declining institutional'
+        else:
+            return 'stabilizing market'
+    
+    def _get_sector_insight(self, trend: str, trend_strength: float) -> str:
+        """Get sector-specific insight"""
+        if trend == 'upward' and trend_strength > 0.6:
+            return 'strengthening'
+        elif trend == 'downward' and trend_strength > 0.6:
+            return 'weakening'
+        else:
+            return 'consolidating'
+    
+    def _get_general_insight(self, sentiment: str, trend: str) -> str:
+        """Get general market insight"""
+        if sentiment == 'positive' and trend in ['upward', 'bullish']:
+            return 'favorable'
+        elif sentiment == 'negative' and trend in ['downward', 'bearish']:
+            return 'challenging'
+        else:
+            return 'transitional'
+    
+    def _interpret_market_momentum(self, trend: str, trend_strength: float) -> str:
+        """Interpret market momentum"""
+        if trend_strength > 0.7:
+            return 'strong'
+        elif trend_strength > 0.4:
+            return 'moderate'
+        else:
+            return 'weak'
     
     def _generate_fallback_opportunities(self) -> List[Dict[str, Any]]:
         """Generate basic opportunities when OpenAI API is not available"""
